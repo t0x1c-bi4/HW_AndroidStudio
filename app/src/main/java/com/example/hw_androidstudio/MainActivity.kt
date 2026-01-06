@@ -4,14 +4,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.runtime.remember
 import com.example.hw_androidstudio.ui.theme.HW_AndroidStudioTheme
+import com.example.hw_androidstudio.viewmodel.quizViewModel
+import com.example.hw_androidstudio.ui.theme.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,29 +15,37 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             HW_AndroidStudioTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                val viewModel = remember { quizViewModel() }
+                val state = viewModel.state
+
+                when {
+
+                    !state.isStarted -> {
+                        WelcomeScreen(onStart = { viewModel.startQuiz() })
+                    }
+
+                    state.isFinished -> {
+                        ResultScreen(
+                            correct = state.correctAnswers,
+                            total = com.example.hw_androidstudio.data.quizRepository.questions.size,
+                            onRestart = { viewModel.restart() }
+                        )
+                    }
+
+                    else -> {
+                        val question = com.example.hw_androidstudio.data.quizRepository.questions[state.currentQuestionIndex]
+
+                        QuestionScreen(
+                            questionText = question.text,
+                            answers = question.answers,
+                            selectedAnswer = state.selectedAnswerIndex,
+                            questionNumber = "Вопрос ${state.currentQuestionIndex + 1} из ${com.example.hw_androidstudio.data.quizRepository.questions.size}",
+                            onAnswerSelected = { viewModel.selectAnswer(it) },
+                            onNext = { viewModel.nextQuestion() }
+                        )
+                    }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    HW_AndroidStudioTheme {
-        Greeting("Android")
     }
 }
